@@ -1,0 +1,127 @@
+{
+  "run_at": "2026-08-24T13:26:17.709965",
+  "total": 7,
+  "passed": 7,
+  "failed": 0,
+  "results": [
+    {
+      "name": "Basic prompt",
+      "timestamp": "2026-08-24T13:24:01.279418",
+      "status": "pass",
+      "error": null,
+      "duration_seconds": 12.59,
+      "stats_before": {
+        "cpu_percent": 26.4,
+        "ram_percent": 52.5,
+        "ram_used_gb": 8.02
+      },
+      "stats_after": {
+        "cpu_percent": 50.2,
+        "ram_percent": 75.9,
+        "ram_used_gb": 11.6
+      }
+    },
+    {
+      "name": "Empty prompt",
+      "timestamp": "2026-08-24T13:24:14.876876",
+      "status": "pass",
+      "error": null,
+      "duration_seconds": 2.05,
+      "stats_before": {
+        "cpu_percent": 49.8,
+        "ram_percent": 76.0,
+        "ram_used_gb": 11.61
+      },
+      "stats_after": {
+        "cpu_percent": 14.8,
+        "ram_percent": 76.2,
+        "ram_used_gb": 11.65
+      }
+    },
+    {
+      "name": "Very long prompt",
+      "timestamp": "2026-08-24T13:24:17.929997",
+      "status": "pass",
+      "error": null,
+      "duration_seconds": 0.0,
+      "stats_before": {
+        "cpu_percent": 2.7,
+        "ram_percent": 76.2,
+        "ram_used_gb": 11.65
+      },
+      "stats_after": {
+        "cpu_percent": 5.5,
+        "ram_percent": 76.2,
+        "ram_used_gb": 11.65
+      }
+    },
+    {
+      "name": "Special characters / unicode",
+      "timestamp": "2026-08-24T13:24:18.933624",
+      "status": "pass",
+      "error": null,
+      "duration_seconds": 43.29,
+      "stats_before": {
+        "cpu_percent": 22.0,
+        "ram_percent": 76.0,
+        "ram_used_gb": 11.62
+      },
+      "stats_after": {
+        "cpu_percent": 21.1,
+        "ram_percent": 75.4,
+        "ram_used_gb": 11.52
+      }
+    },
+    {
+      "name": "Connectivity check",
+      "timestamp": "2026-08-24T13:25:03.228684",
+      "status": "pass",
+      "error": null,
+      "duration_seconds": 0.4,
+      "stats_before": {
+        "cpu_percent": 8.1,
+        "ram_percent": 75.4,
+        "ram_used_gb": 11.52
+      },
+      "stats_after": {
+        "cpu_percent": 18.5,
+        "ram_percent": 75.4,
+        "ram_used_gb": 11.52
+      }
+    },
+    {
+      "name": "Repeated rapid requests",
+      "timestamp": "2026-08-24T13:25:04.633869",
+      "status": "pass",
+      "error": null,
+      "duration_seconds": 13.79,
+      "stats_before": {
+        "cpu_percent": 26.1,
+        "ram_percent": 74.4,
+        "ram_used_gb": 11.36
+      },
+      "stats_after": {
+        "cpu_percent": 56.4,
+        "ram_percent": 74.5,
+        "ram_used_gb": 11.38
+      }
+    }, 
+    {
+      "name": "Simulated provider failure",
+      "timestamp": "2026-08-24T13:25:19.427275",
+      "status": "pass",
+      "error": null,
+      "duration_seconds": 57.78,
+      "stats_before": {
+        "cpu_percent": 19.4,
+        "ram_percent": 74.5,
+        "ram_used_gb": 11.38
+      },
+      "stats_after": {
+        "cpu_percent": 36.0,
+        "ram_percent": 64.3,
+        "ram_used_gb": 9.83
+      }
+    }
+  ]
+}
