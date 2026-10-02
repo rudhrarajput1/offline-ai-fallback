@@ -1,23 +1,3 @@
-"""
-AI Fallback System
--------------------
-Automatically switches between an online AI service and your local Ollama
-model depending on internet connectivity.
-
-Requires: pip install requests --break-system-packages
-Requires: Ollama installed and running locally (ollama serve, then ollama run <model>)
-
---- Using a different online AI provider ---
-Three provider adapters are built in: "gemini", "openai", and "generic".
-To switch providers, just change ONLINE_PROVIDER near the bottom of this file
-and set the matching environment variable for your API key. To add a provider
-that isn't listed, add one function to PROVIDERS below following the same
-pattern (build the request, parse the response) — nothing else needs to change.
-
-Never hardcode a real API key in this file. Always read it from an
-environment variable so it's safe to commit/share this code publicly.
-"""
-
 import concurrent.futures
 import os
 import socket
