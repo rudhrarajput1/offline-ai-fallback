@@ -1,8 +1,12 @@
+"""ai_fallback.py"""
+
 import concurrent.futures
 import os
 import socket
-
+import ollama
 import requests
+from google import genai
+
 
 
 def is_online(timeout=2):
@@ -132,6 +136,7 @@ def ask_ai_race(prompt, api_url=None, api_key=None, provider="gemini", model="ll
       whichever completes successfully first.
     - If one provider errors, waits for the other. If both fail, raises RuntimeError.
     """
+    
     MAX_PROMPT_CHARS = 2000
     if len(prompt) > MAX_PROMPT_CHARS:
         return (f"[notice] Your message is too long ({len(prompt)} characters). "
@@ -205,3 +210,52 @@ if __name__ == "__main__":
         except Exception as exc:
             answer = f"[error] {exc}"
         print(f"AI: {answer}\n")
+
+
+
+client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+
+GEMINI_MODELS = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.1-flash-lite"]
+
+def ask_gemini(prompt):
+    for model in GEMINI_MODELS:
+        try:
+            response = client.models.generate_content(model=model, contents=prompt)
+            return response.text
+        except Exception as e:
+            print(f"{model} failed: {e}")
+    return None
+    
+
+def ask_ollama(prompt, model="llama3"):
+    try:
+        response = ollama.chat(
+            model=model,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response["message"]["content"]
+    except Exception as e:
+        print(f"Ollama failed: {e}")
+        return None
+    
+    
+
+
+def check_internet():
+    try:
+        requests.get("https://www.google.com", timeout=3)
+        return True
+    except requests.ConnectionError:
+        return False
+    
+    
+def get_response(prompt):
+       if check_internet():
+        result = ask_gemini(prompt)
+        if result:
+            return result
+        return ask_ollama(prompt) 
+
+if __name__ == "__main__":
+    prompt = "Hello, are you working?"
+    print(get_response(prompt))
