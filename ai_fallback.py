@@ -27,19 +27,56 @@ def is_online(timeout=2):
 # file needs to change.
 # ---------------------------------------------------------------------------
 
-def _call_gemini(prompt, api_url, api_key):
-    headers = {"Content-Type": "application/json"}
-    params = {"key": api_key}
-    body = {"contents": [{"parts": [{"text": prompt}]}]}
+GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
+GEMINI_PREFERRED = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite"]  # edit freely
+RETRYABLE = {429, 500, 502, 503, 504}
+_last_good_model = None
 
-    response = requests.post(api_url, headers=headers, params=params, json=body, timeout=10)
-    response.raise_for_status()
-    data = response.json()
+
+def _gemini_candidates(api_key):
+    """Preferred models first, then any other available flash model."""
     try:
-        return data["candidates"][0]["content"]["parts"][0]["text"]
-    except (KeyError, IndexError):
-        return ""
+        r = requests.get(GEMINI_BASE, params={"key": api_key}, timeout=5)
+        r.raise_for_status()
+        available = [
+            m["name"].split("/")[-1]
+            for m in r.json().get("models", [])
+            if "generateContent" in m.get("supportedGenerationMethods", [])
+        ]
+    except requests.RequestException:
+        return list(GEMINI_PREFERRED)  # list call failed: use the preferred list
 
+    ordered = [m for m in GEMINI_PREFERRED if m in available]
+    ordered += [m for m in available if "flash" in m and m not in ordered]
+    return ordered or list(GEMINI_PREFERRED)
+
+
+def _call_gemini(prompt, api_url, api_key):
+    global _last_good_model
+    candidates = _gemini_candidates(api_key)
+    if _last_good_model in candidates:
+        candidates.remove(_last_good_model)
+        candidates.insert(0, _last_good_model)
+
+    body = {"contents": [{"parts": [{"text": prompt}]}]}
+    for model in candidates:
+        try:
+            r = requests.post(f"{GEMINI_BASE}/{model}:generateContent",
+                              params={"key": api_key}, json=body, timeout=8)
+            r.raise_for_status()
+            _last_good_model = model
+            print(f"[gemini] using {model}")
+            return r.json()["candidates"][0]["content"]["parts"][0]["text"]
+        except requests.HTTPError as e:
+            if e.response.status_code not in RETRYABLE:
+                raise  # bad key or bad request: stop, go local
+            print(f"[gemini] {model} busy ({e.response.status_code}), trying next")
+        except (requests.Timeout, requests.ConnectionError):
+            print(f"[gemini] {model} timed out, trying next")
+        except (KeyError, IndexError):
+            print(f"[gemini] {model} gave an empty reply, trying next")
+
+    raise requests.RequestException("All Gemini models are busy")
 
 def _call_openai(prompt, api_url, api_key):
     headers = {
