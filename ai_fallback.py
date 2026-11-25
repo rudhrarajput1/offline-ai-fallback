@@ -5,7 +5,6 @@ import os
 import socket
 import ollama
 import requests
-from google import genai
 
 
 
@@ -28,13 +27,19 @@ def is_online(timeout=2):
 # ---------------------------------------------------------------------------
 
 GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
-GEMINI_PREFERRED = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite"]  # edit freely
+GEMINI_PREFERRED = [
+    "gemini-3.8-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+]
 RETRYABLE = {429, 500, 502, 503, 504}
 _last_good_model = None
 
 
 def _gemini_candidates(api_key):
-    """Preferred models first, then any other available flash model."""
+    """Return configured free-tier Flash models available to this API key and if you have any premium gemini models."""
+    preferred = [model for model in GEMINI_PREFERRED if model]
     try:
         r = requests.get(GEMINI_BASE, params={"key": api_key}, timeout=5)
         r.raise_for_status()
@@ -44,16 +49,14 @@ def _gemini_candidates(api_key):
             if "generateContent" in m.get("supportedGenerationMethods", [])
         ]
     except requests.RequestException:
-        return list(GEMINI_PREFERRED)  # list call failed: use the preferred list
+        return preferred  # list call failed: use the preferred list
 
-    ordered = [m for m in GEMINI_PREFERRED if m in available]
-    ordered += [m for m in available if "flash" in m and m not in ordered]
-    return ordered or list(GEMINI_PREFERRED)
-
+    ordered = [m for m in preferred if m in available]
+    return ordered or preferred
 
 def _call_gemini(prompt, api_url, api_key):
     global _last_good_model
-    candidates = _gemini_candidates(api_key)
+    candidates = [model for model in _gemini_candidates(api_key) if model]
     if _last_good_model in candidates:
         candidates.remove(_last_good_model)
         candidates.insert(0, _last_good_model)
@@ -68,15 +71,15 @@ def _call_gemini(prompt, api_url, api_key):
             print(f"[gemini] using {model}")
             return r.json()["candidates"][0]["content"]["parts"][0]["text"]
         except requests.HTTPError as e:
-            if e.response.status_code not in RETRYABLE:
+            if e.response.status_code not in RETRYABLE and e.response.status_code != 404:
                 raise  # bad key or bad request: stop, go local
-            print(f"[gemini] {model} busy ({e.response.status_code}), trying next")
+            print(f"[gemini] {model} unavailable ({e.response.status_code}), trying next")
         except (requests.Timeout, requests.ConnectionError):
             print(f"[gemini] {model} timed out, trying next")
         except (KeyError, IndexError):
             print(f"[gemini] {model} gave an empty reply, trying next")
 
-    raise requests.RequestException("All Gemini models are busy")
+    raise requests.RequestException("All Gemini model candidates failed")
 
 def _call_openai(prompt, api_url, api_key):
     headers = {
@@ -250,18 +253,16 @@ if __name__ == "__main__":
 
 
 
-client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-
-GEMINI_MODELS = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.1-flash-lite"]
-
 def ask_gemini(prompt):
-    for model in GEMINI_MODELS:
-        try:
-            response = client.models.generate_content(model=model, contents=prompt)
-            return response.text
-        except Exception as e:
-            print(f"{model} failed: {e}")
-    return None
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        print("[gemini] GEMINI_API_KEY is not set")
+        return None
+    try:
+        return _call_gemini(prompt, GEMINI_BASE, api_key)
+    except requests.RequestException as e:
+        print(f"[gemini] failed: {e}")
+        return None
     
 
 def ask_ollama(prompt, model="llama3"):
